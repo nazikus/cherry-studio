@@ -7,6 +7,7 @@
 export enum IpcChannel {
   App_GetCacheSize = 'app:get-cache-size',
   App_ClearCache = 'app:clear-cache',
+  MiniApp_ClearData = 'mini-app:clear-data',
   App_SetLaunchOnBoot = 'app:set-launch-on-boot',
   App_SetSpellCheckLanguages = 'app:set-spell-check-languages',
   App_Select = 'app:select',

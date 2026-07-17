@@ -5,10 +5,11 @@ const {
   nodeProxyConfigureMock,
   nodeProxyControllerConstructorMock,
   sessionSetProxyMock,
-  webviewSetProxyMock,
+  miniAppSessionSetProxyMock,
   appSetProxyMock,
   getSystemProxyMock,
-  intervalRegistrations
+  intervalRegistrations,
+  knownMiniAppSessions
 } = vi.hoisted(() => {
   const nodeProxyConfigureMock = vi.fn()
 
@@ -16,10 +17,11 @@ const {
     nodeProxyConfigureMock,
     nodeProxyControllerConstructorMock: vi.fn(() => ({ configure: nodeProxyConfigureMock })),
     sessionSetProxyMock: vi.fn().mockResolvedValue(undefined),
-    webviewSetProxyMock: vi.fn().mockResolvedValue(undefined),
+    miniAppSessionSetProxyMock: vi.fn().mockResolvedValue(undefined),
     appSetProxyMock: vi.fn().mockResolvedValue(undefined),
     getSystemProxyMock: vi.fn(),
-    intervalRegistrations: [] as Array<{ handler: () => void; dispose: ReturnType<typeof vi.fn> }>
+    intervalRegistrations: [] as Array<{ handler: () => void; dispose: ReturnType<typeof vi.fn> }>,
+    knownMiniAppSessions: [{ setProxy: vi.fn().mockResolvedValue(undefined) }]
   }
 })
 
@@ -62,12 +64,14 @@ vi.mock('../NodeProxyController', () => ({
 }))
 
 vi.mock('os-proxy-config', () => ({ getSystemProxy: getSystemProxyMock }))
+vi.mock('@main/utils/miniAppSessions', () => ({
+  getKnownMiniAppSessions: () => knownMiniAppSessions
+}))
 
 vi.mock('electron', () => ({
   app: { setProxy: appSetProxyMock },
   session: {
-    defaultSession: { setProxy: sessionSetProxyMock },
-    fromPartition: vi.fn(() => ({ setProxy: webviewSetProxyMock }))
+    defaultSession: { setProxy: sessionSetProxyMock }
   }
 }))
 
@@ -113,6 +117,7 @@ describe('ProxyService — preference wiring', () => {
     vi.clearAllMocks()
     MockMainPreferenceServiceUtils.resetMocks()
     intervalRegistrations.length = 0
+    knownMiniAppSessions.splice(0, knownMiniAppSessions.length, { setProxy: miniAppSessionSetProxyMock })
     getSystemProxyMock.mockResolvedValue({ proxyUrl: 'http://system:1080', noProxy: ['localhost'] })
   })
 
@@ -142,7 +147,7 @@ describe('ProxyService — preference wiring', () => {
     })
     const expected = { mode: 'fixed_servers', proxyRules: 'http://127.0.0.1:7890', proxyBypassRules: 'localhost' }
     expect(sessionSetProxyMock).toHaveBeenCalledWith(expected)
-    expect(webviewSetProxyMock).toHaveBeenCalledWith(expected)
+    expect(miniAppSessionSetProxyMock).toHaveBeenCalledWith(expected)
     expect(appSetProxyMock).toHaveBeenCalledWith(expected)
   })
 
@@ -158,7 +163,7 @@ describe('ProxyService — preference wiring', () => {
       proxyBypassRules: 'localhost'
     })
     expect(sessionSetProxyMock).toHaveBeenCalledWith(expected)
-    expect(webviewSetProxyMock).toHaveBeenCalledWith(expected)
+    expect(miniAppSessionSetProxyMock).toHaveBeenCalledWith(expected)
     expect(appSetProxyMock).toHaveBeenCalledWith(expected)
   })
 

@@ -20,6 +20,7 @@ const calculatorApp: MiniAppType = {
 const mocks = vi.hoisted(() => ({
   openTab: vi.fn(),
   updateAppStatus: vi.fn(() => Promise.resolve()),
+  clearMiniAppData: vi.fn(() => Promise.resolve()),
   removeCustomMiniApp: vi.fn(() => Promise.resolve()),
   setOpenedKeepAliveMiniApps: vi.fn(),
   setSidebarFavorites: vi.fn(() => Promise.resolve()),
@@ -83,6 +84,7 @@ vi.mock('@renderer/hooks/useMiniApps', () => ({
     miniAppShow: false,
     setOpenedKeepAliveMiniApps: mocks.setOpenedKeepAliveMiniApps,
     updateAppStatus: mocks.updateAppStatus,
+    clearMiniAppData: mocks.clearMiniAppData,
     removeCustomMiniApp: mocks.removeCustomMiniApp
   })
 }))
@@ -165,5 +167,14 @@ describe('MiniApp launchpad pin menu', () => {
     fireEvent.click(screen.getByRole('button', { name: 'miniApp.remove_from_launchpad' }))
 
     expect(mocks.updateAppStatus).toHaveBeenCalledWith('calculator', 'enabled')
+  })
+
+  it('clears mini app data from the context menu', () => {
+    mocks.miniApps = [calculatorApp]
+
+    render(<MiniApp app={calculatorApp} variant="launchpad" />)
+    fireEvent.click(screen.getByRole('button', { name: 'miniApp.clear_data' }))
+
+    expect(mocks.clearMiniAppData).toHaveBeenCalledWith('calculator')
   })
 })

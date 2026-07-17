@@ -4118,6 +4118,9 @@
   "miniApp": {
     "add_to_launchpad": "添加到启动台",
     "add_to_sidebar": "添加到侧边栏",
+    "clear_data": "清除数据",
+    "clear_data_failed": "清除小程序数据失败",
+    "clear_data_success": "已清除小程序数据",
     "error": {
       "load_failed": "应用加载失败",
       "not_found": "应用未找到"

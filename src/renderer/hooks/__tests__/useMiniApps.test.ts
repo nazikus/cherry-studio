@@ -70,6 +70,10 @@ describe('useMiniApps', () => {
     mockTabs.updateTab.mockClear()
     mockClearWebviewState.mockClear()
     mockSetWebviewLoaded.mockClear()
+    window.api = {
+      ...window.api,
+      clearMiniAppData: vi.fn().mockResolvedValue({ success: true })
+    } as typeof window.api
   })
 
   // === Data Loading ===
@@ -273,6 +277,28 @@ describe('useMiniApps', () => {
       })
       const stored = MockUseCacheUtils.getCacheValue('mini_app.opened_keep_alive') ?? []
       expect(stored.map((a) => a.appId)).toEqual(['b'])
+    })
+  })
+
+  describe('clearMiniAppData', () => {
+    it('clears a single mini app partition via preload IPC', async () => {
+      const { result } = renderHook(() => useMiniApps())
+
+      await act(async () => {
+        await result.current.clearMiniAppData('chatgpt')
+      })
+
+      expect(window.api.clearMiniAppData).toHaveBeenCalledWith('chatgpt')
+    })
+
+    it('throws when the preload call reports failure', async () => {
+      window.api = {
+        ...window.api,
+        clearMiniAppData: vi.fn().mockResolvedValue({ success: false, error: 'boom' })
+      } as typeof window.api
+      const { result } = renderHook(() => useMiniApps())
+
+      await expect(result.current.clearMiniAppData('chatgpt')).rejects.toThrow('boom')
     })
   })
 

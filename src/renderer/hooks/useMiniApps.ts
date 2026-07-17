@@ -445,6 +445,18 @@ export const useMiniApps = () => {
     [cleanupOpenedCustomMiniApp, deleteAppTrigger]
   )
 
+  const clearMiniAppData = useCallback(async (appId: string) => {
+    try {
+      const result = await window.api.clearMiniAppData(appId)
+      if (!result?.success) {
+        throw new Error(result?.error || `Failed to clear mini app data for "${appId}"`)
+      }
+    } catch (error) {
+      logger.error('Failed to clear mini app data', { appId, error })
+      throw error
+    }
+  }, [])
+
   /**
    * Reorder miniApps. Pass the new ordered list (typically from a drag-and-drop
    * callback). Internally diffs against current order and dispatches the
@@ -514,6 +526,7 @@ export const useMiniApps = () => {
     createCustomMiniApp,
     updateCustomMiniApp,
     refreshCustomMiniApp,
+    clearMiniAppData,
     removeCustomMiniApp,
     reorderMiniApps,
     reorderMiniAppsByStatus

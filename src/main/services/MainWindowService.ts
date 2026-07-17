@@ -334,14 +334,7 @@ export class MainWindowService extends BaseService {
       ]
 
       if (oauthProviderUrls.some((link) => url.startsWith(link))) {
-        return {
-          action: 'allow',
-          overrideBrowserWindowOptions: {
-            webPreferences: {
-              partition: 'persist:webview'
-            }
-          }
-        }
+        return { action: 'allow' }
       }
 
       if (url.includes('http://file/')) {

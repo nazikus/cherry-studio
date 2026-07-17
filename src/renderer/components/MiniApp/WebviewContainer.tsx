@@ -2,6 +2,7 @@ import { usePreference } from '@data/hooks/usePreference'
 import { loggerService } from '@logger'
 import { ipcApi, useIpcOn } from '@renderer/ipc'
 import { toast } from '@renderer/services/toast'
+import { getMiniAppPartition } from '@shared/data/types/miniApp'
 import type { DidNavigateInPageEvent, WebviewTag } from 'electron'
 import { memo, useCallback, useEffect, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
@@ -177,7 +178,7 @@ const WebviewContainer = memo(
         ref={handleRef}
         data-mini-app-id={appid}
         style={WebviewStyle}
-        partition="persist:webview"
+        partition={getMiniAppPartition(appid)}
         useragent={
           appid === 'google'
             ? 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko)  Safari/537.36'

@@ -15,6 +15,7 @@ export type MiniAppId = string & { readonly __brand: unique symbol }
 // Region types
 export type MiniAppRegion = 'CN' | 'Global'
 export type MiniAppRegionFilter = 'auto' | MiniAppRegion
+export const MINI_APP_PARTITION_PREFIX = 'persist:webview-' as const
 
 // Status enum
 export const MiniAppStatusSchema = z.enum(['enabled', 'disabled', 'pinned'])
@@ -57,3 +58,11 @@ export const MiniAppSchema = z.object({
 })
 
 export type MiniApp = z.infer<typeof MiniAppSchema>
+
+export function getMiniAppPartition(appId: string): string {
+  return `${MINI_APP_PARTITION_PREFIX}${appId}`
+}
+
+export function isMiniAppPartition(partition: string | null | undefined): partition is string {
+  return typeof partition === 'string' && partition.startsWith(MINI_APP_PARTITION_PREFIX)
+}
