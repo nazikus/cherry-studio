@@ -8,7 +8,12 @@ import {
   listDirectoryEntries as searchListDirectoryEntries
 } from '@main/services/file'
 import { hasWritePermission, isPathInside, untildify } from '@main/utils/legacyFile'
-import { clearMiniAppData, clearSessionData, getKnownMiniAppSessions } from '@main/utils/miniAppSessions'
+import {
+  clearMiniAppData,
+  clearSessionData,
+  getKnownMiniAppSessions,
+  isKnownMiniAppAppId
+} from '@main/utils/miniAppSessions'
 import { IpcChannel } from '@shared/IpcChannel'
 import { BrowserWindow, dialog, ipcMain, session } from 'electron'
 
@@ -83,6 +88,9 @@ export async function registerIpc() {
 
   ipcMain.handle(IpcChannel.MiniApp_ClearData, async (_, appId: string) => {
     try {
+      if (!isKnownMiniAppAppId(appId)) {
+        throw new Error(`Unknown mini app: ${appId}`)
+      }
       await clearMiniAppData(appId)
       return { success: true }
     } catch (error: any) {

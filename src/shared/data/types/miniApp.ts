@@ -62,7 +62,3 @@ export type MiniApp = z.infer<typeof MiniAppSchema>
 export function getMiniAppPartition(appId: string): string {
   return `${MINI_APP_PARTITION_PREFIX}${appId}`
 }
-
-export function isMiniAppPartition(partition: string | null | undefined): partition is string {
-  return typeof partition === 'string' && partition.startsWith(MINI_APP_PARTITION_PREFIX)
-}

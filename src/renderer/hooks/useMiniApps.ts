@@ -449,7 +449,7 @@ export const useMiniApps = () => {
     try {
       const result = await window.api.clearMiniAppData(appId)
       if (!result?.success) {
-        throw new Error(result?.error || `Failed to clear mini app data for "${appId}"`)
+        throw new Error(result?.error || `Failed to clear mini app data for appId ${appId}`)
       }
     } catch (error) {
       logger.error('Failed to clear mini app data', { appId, error })

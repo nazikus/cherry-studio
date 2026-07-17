@@ -38,7 +38,8 @@ import {
   clearMiniAppData,
   clearSessionData,
   getKnownMiniAppPartitions,
-  getKnownMiniAppSessions
+  getKnownMiniAppSessions,
+  isKnownMiniAppAppId
 } from '../miniAppSessions'
 
 describe('miniAppSessions', () => {
@@ -61,6 +62,13 @@ describe('miniAppSessions', () => {
     expect(fromPartitionMock).toHaveBeenCalledWith('persist:webview-chatgpt')
     expect(fromPartitionMock).toHaveBeenCalledWith('persist:webview-gemini')
     expect(sessions).toHaveLength(2)
+  })
+
+  it('checks whether an app id belongs to a known mini app', () => {
+    listMock.mockReturnValue([{ appId: 'chatgpt' }])
+
+    expect(isKnownMiniAppAppId('chatgpt')).toBe(true)
+    expect(isKnownMiniAppAppId('gemini')).toBe(false)
   })
 
   it('clears cache and storage for a session', async () => {

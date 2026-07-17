@@ -131,7 +131,7 @@ export class WebviewService extends BaseService {
   }
 
   private configureMiniAppSession(contents: Electron.WebContents) {
-    if (contents.getType?.() !== 'webview') {
+    if (typeof contents.getType !== 'function' || contents.getType() !== 'webview') {
       return
     }
 

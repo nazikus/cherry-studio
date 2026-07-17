@@ -10,6 +10,10 @@ export function getKnownMiniAppPartitions(): string[] {
   return [...new Set(miniAppService.list().map((app) => getMiniAppPartition(app.appId)))]
 }
 
+export function isKnownMiniAppAppId(appId: string): boolean {
+  return miniAppService.list().some((app) => app.appId === appId)
+}
+
 export function getKnownMiniAppSessions(): Session[] {
   return getKnownMiniAppPartitions().map((partition) => session.fromPartition(partition))
 }
