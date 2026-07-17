@@ -25,6 +25,7 @@ const mocks = vi.hoisted(() => ({
   pinned: [] as MiniApp[],
   openedKeepAliveMiniApps: [] as MiniApp[],
   updateAppStatus: vi.fn().mockResolvedValue(undefined),
+  clearMiniAppData: vi.fn().mockResolvedValue(undefined),
   removeCustomMiniApp: vi.fn().mockResolvedValue(undefined),
   openTab: vi.fn(),
   useMiniAppVisibility: vi.fn(() => ({
@@ -48,6 +49,7 @@ vi.mock('@renderer/hooks/useMiniApps', () => ({
     miniAppShow: false,
     setOpenedKeepAliveMiniApps: vi.fn(),
     updateAppStatus: mocks.updateAppStatus,
+    clearMiniAppData: mocks.clearMiniAppData,
     removeCustomMiniApp: mocks.removeCustomMiniApp,
     isLoading: false,
     error: null
@@ -184,6 +186,7 @@ describe('MiniAppsPage', () => {
     mocks.pinned = []
     mocks.openedKeepAliveMiniApps = []
     mocks.updateAppStatus.mockClear()
+    mocks.clearMiniAppData.mockClear()
     mocks.removeCustomMiniApp.mockClear()
     mocks.openTab.mockClear()
     mocks.useMiniAppVisibility.mockClear()
@@ -237,6 +240,9 @@ describe('MiniAppsPage', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'miniApp.sidebar.hide.title' }))
     await waitFor(() => expect(mocks.updateAppStatus).toHaveBeenCalledWith('custom', 'disabled'))
+
+    fireEvent.click(screen.getByRole('button', { name: 'miniApp.clear_data' }))
+    await waitFor(() => expect(mocks.clearMiniAppData).toHaveBeenCalledWith('custom'))
 
     fireEvent.click(screen.getByRole('button', { name: 'common.edit' }))
     expect(screen.getByTestId('new-mini-app-panel')).toHaveAttribute('data-app-id', 'custom')

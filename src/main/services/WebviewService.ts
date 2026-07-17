@@ -2,33 +2,15 @@ import { application } from '@application'
 import { loggerService } from '@logger'
 import { BaseService, Injectable, Phase, ServicePhase } from '@main/core/lifecycle'
 import { getAppLanguage, t } from '@main/i18n'
-import { app, dialog, session, shell, webContents } from 'electron'
+import { app, dialog, shell, webContents } from 'electron'
 import { promises as fs } from 'fs'
 
 import { isSafeExternalUrl } from '../utils/externalUrlSafety'
 
 const logger = loggerService.withContext('WebviewService')
 
-/**
- * init the useragent of the webview session
- * remove the CherryStudio and Electron from the useragent
- */
-export function initSessionUserAgent() {
-  const wvSession = session.fromPartition('persist:webview')
-  const originUA = wvSession.getUserAgent()
-  const newUA = originUA.replace(/CherryStudio\/\S+\s/, '').replace(/Electron\/\S+\s/, '')
-
-  wvSession.setUserAgent(newUA)
-  wvSession.webRequest.onBeforeSendHeaders((details, cb) => {
-    const language = application.get('PreferenceService').get('app.language')
-    const headers = {
-      ...details.requestHeaders,
-      'User-Agent': details.url.includes('google.com') ? originUA : newUA,
-      'Accept-Language': `${language}, en;q=0.9, *;q=0.5`
-    }
-    cb({ requestHeaders: headers })
-  })
-}
+const sanitizeUserAgent = (userAgent: string) =>
+  userAgent.replace(/CherryStudio\/\S+\s/, '').replace(/Electron\/\S+\s/, '')
 
 /**
  * WebviewService handles the behavior of links opened from webview elements
@@ -125,6 +107,8 @@ const attachKeyboardHandler = (contents: Electron.WebContents) => {
 @Injectable('WebviewService')
 @ServicePhase(Phase.WhenReady)
 export class WebviewService extends BaseService {
+  private readonly configuredSessions = new WeakSet<Electron.Session>()
+
   protected async onInit() {
     this.initSessionUserAgent()
     this.initWebviewHotkeys()
@@ -135,12 +119,31 @@ export class WebviewService extends BaseService {
    * Removes CherryStudio and Electron from the useragent.
    */
   private initSessionUserAgent() {
-    const wvSession = session.fromPartition('persist:webview')
-    const originUA = wvSession.getUserAgent()
-    const newUA = originUA.replace(/CherryStudio\/\S+\s/, '').replace(/Electron\/\S+\s/, '')
+    webContents.getAllWebContents().forEach((contents) => {
+      this.configureMiniAppSession(contents)
+    })
 
-    wvSession.setUserAgent(newUA)
-    wvSession.webRequest.onBeforeSendHeaders((details, cb) => {
+    const handler = (_: Electron.Event, contents: Electron.WebContents) => {
+      this.configureMiniAppSession(contents)
+    }
+    app.on('web-contents-created', handler)
+    this.registerDisposable(() => app.removeListener('web-contents-created', handler))
+  }
+
+  private configureMiniAppSession(contents: Electron.WebContents) {
+    if (typeof contents.getType !== 'function' || contents.getType() !== 'webview') {
+      return
+    }
+
+    const targetSession = contents.session
+    if (this.configuredSessions.has(targetSession)) {
+      return
+    }
+
+    const originUA = targetSession.getUserAgent()
+    const newUA = sanitizeUserAgent(originUA)
+    targetSession.setUserAgent(newUA)
+    targetSession.webRequest.onBeforeSendHeaders((details, cb) => {
       const language = getAppLanguage()
       const headers = {
         ...details.requestHeaders,
@@ -149,7 +152,9 @@ export class WebviewService extends BaseService {
       }
       cb({ requestHeaders: headers })
     })
-    this.registerDisposable(() => wvSession.webRequest.onBeforeSendHeaders(null))
+
+    this.configuredSessions.add(targetSession)
+    this.registerDisposable(() => targetSession.webRequest.onBeforeSendHeaders(null))
   }
 
   /**

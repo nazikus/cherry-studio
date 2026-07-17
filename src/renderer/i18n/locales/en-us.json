@@ -4118,6 +4118,9 @@
   "miniApp": {
     "add_to_launchpad": "Add to Launchpad",
     "add_to_sidebar": "Add to Sidebar",
+    "clear_data": "Clear Data",
+    "clear_data_failed": "Failed to clear mini-app data",
+    "clear_data_success": "Mini-app data cleared",
     "error": {
       "load_failed": "Failed to load app",
       "not_found": "App not found"

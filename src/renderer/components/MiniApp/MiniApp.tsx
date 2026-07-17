@@ -36,6 +36,7 @@ const MiniApp: FC<Props> = ({ app, onClick, onOpen, onEditCustom, size = 60, isL
     currentMiniAppId,
     miniAppShow,
     setOpenedKeepAliveMiniApps,
+    clearMiniAppData,
     updateAppStatus,
     removeCustomMiniApp
   } = useMiniApps()
@@ -133,6 +134,16 @@ const MiniApp: FC<Props> = ({ app, onClick, onOpen, onEditCustom, size = 60, isL
     }
   }
 
+  const handleClearData = async () => {
+    try {
+      await clearMiniAppData(app.appId)
+      toast.success(t('miniApp.clear_data_success'))
+    } catch (error) {
+      logger.error('Failed to clear mini app data:', error as Error)
+      toast.error(t('miniApp.clear_data_failed'))
+    }
+  }
+
   if (!shouldShow) {
     return null
   }
@@ -147,6 +158,7 @@ const MiniApp: FC<Props> = ({ app, onClick, onOpen, onEditCustom, size = 60, isL
       label: t(isSidebarFavorite ? 'miniApp.remove_from_sidebar' : 'miniApp.add_to_sidebar'),
       onSelect: handleToggleSidebarFavorite
     },
+    { type: 'item', id: 'mini-app.clear-data', label: t('miniApp.clear_data'), onSelect: handleClearData },
     ...(!isPinned
       ? ([
           { type: 'item', id: 'mini-app.hide', label: t('miniApp.sidebar.hide.title'), onSelect: handleHide }

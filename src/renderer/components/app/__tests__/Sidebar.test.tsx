@@ -80,6 +80,7 @@ vi.mock('@renderer/hooks/useMiniApps', () => ({
     allApps: mocks.allApps,
     miniApps: mocks.visibleMiniApps ?? mocks.allApps,
     pinned: mocks.pinnedMiniApps,
+    clearMiniAppData: vi.fn(),
     reorderMiniAppsByStatus: mocks.reorderMiniAppsByStatus
   })
 }))

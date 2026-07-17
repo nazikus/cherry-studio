@@ -359,6 +359,7 @@ vi.mock('@renderer/hooks/useMiniApps', () => ({
     miniAppShow: false,
     setOpenedKeepAliveMiniApps: mocks.setOpenedKeepAliveMiniApps,
     updateAppStatus: mocks.updateMiniAppStatus,
+    clearMiniAppData: vi.fn(),
     removeCustomMiniApp: mocks.removeCustomMiniApp
   })
 }))

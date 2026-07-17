@@ -1,0 +1,125 @@
+name: PR Build
+
+on:
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: "Branch to build (e.g. copilot/update-webview-session-partition)"
+        required: true
+        default: "main"
+      platform:
+        description: "Platform to build"
+        required: true
+        default: "linux"
+        type: choice
+        options:
+          - linux
+          - windows
+          - mac
+          - all
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: ${{ fromJSON(
+          github.event.inputs.platform == 'linux' && '["ubuntu-latest"]' ||
+          github.event.inputs.platform == 'windows' && '["windows-latest"]' ||
+          github.event.inputs.platform == 'mac' && '["macos-latest"]' ||
+          '["ubuntu-latest", "windows-latest", "macos-latest"]'
+          ) }}
+
+    steps:
+      - name: Check out Git repository
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ github.event.inputs.branch }}
+
+      - name: Install Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version-file: ".node-version"
+
+      - name: Install macOS dependencies
+        if: runner.os == 'macOS'
+        run: brew install python-setuptools
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v5
+
+      - name: Cache pnpm store
+        id: pnpm-cache
+        shell: bash
+        run: echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_OUTPUT
+
+      - name: Restore pnpm cache
+        uses: actions/cache@v5
+        with:
+          path: ${{ steps.pnpm-cache.outputs.STORE_PATH }}
+          key: ${{ runner.os }}-pnpm-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-
+
+      - name: Install dependencies
+        run: pnpm install
+
+      - name: Build Linux
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get install -y rpm libevdev-dev libxtst-dev libx11-dev libxfixes-dev libwayland-dev
+          pnpm build:linux
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NODE_OPTIONS: --max-old-space-size=8192
+
+      - name: Build macOS
+        if: runner.os == 'macOS'
+        run: pnpm build:mac
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NODE_OPTIONS: --max-old-space-size=8192
+
+      - name: Build Windows
+        if: runner.os == 'Windows'
+        run: pnpm build:win
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NODE_OPTIONS: --max-old-space-size=8192
+
+      - name: Upload Linux artifacts
+        if: runner.os == 'Linux'
+        uses: actions/upload-artifact@v4
+        with:
+          name: cherry-studio-pr-${{ github.event.inputs.branch }}-linux
+          path: |
+            dist/*.AppImage
+            dist/*.deb
+            dist/*.rpm
+          retention-days: 7
+          if-no-files-found: warn
+
+      - name: Upload macOS artifacts
+        if: runner.os == 'macOS'
+        uses: actions/upload-artifact@v4
+        with:
+          name: cherry-studio-pr-${{ github.event.inputs.branch }}-mac
+          path: |
+            dist/*.dmg
+            dist/*.zip
+          retention-days: 7
+          if-no-files-found: warn
+
+      - name: Upload Windows artifacts
+        if: runner.os == 'Windows'
+        uses: actions/upload-artifact@v4
+        with:
+          name: cherry-studio-pr-${{ github.event.inputs.branch }}-windows
+          path: |
+            dist/*.exe
+          retention-days: 7
+          if-no-files-found: warn

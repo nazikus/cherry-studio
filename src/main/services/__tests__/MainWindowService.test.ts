@@ -4,7 +4,15 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 // Hoisted state lets individual tests mutate platform flags / preferences without
 // re-mocking modules. The mock factories below read these via getters, preserving
 // live-binding semantics so each test sees the current value.
-const { platformState, prefValues, applicationMock, windowManagerMock, loggerMock } = vi.hoisted(() => {
+const {
+  platformState,
+  prefValues,
+  applicationMock,
+  windowManagerMock,
+  loggerMock,
+  shellOpenExternalMock,
+  shellOpenPathMock
+} = vi.hoisted(() => {
   const platformState = { isMac: false, isWin: false, isLinux: false, isDev: false }
   const prefValues: Record<string, unknown> = {
     'app.tray.enabled': false,
@@ -35,6 +43,8 @@ const { platformState, prefValues, applicationMock, windowManagerMock, loggerMoc
     info: vi.fn(),
     warn: vi.fn()
   }
+  const shellOpenExternalMock = vi.fn()
+  const shellOpenPathMock = vi.fn()
   const applicationMock = {
     isQuitting: false,
     quit: vi.fn(),
@@ -50,7 +60,15 @@ const { platformState, prefValues, applicationMock, windowManagerMock, loggerMoc
     }),
     getPath: vi.fn((key: string, filename?: string) => (filename ? `/mock/${key}/${filename}` : `/mock/${key}`))
   }
-  return { platformState, prefValues, applicationMock, windowManagerMock, loggerMock }
+  return {
+    platformState,
+    prefValues,
+    applicationMock,
+    windowManagerMock,
+    loggerMock,
+    shellOpenExternalMock,
+    shellOpenPathMock
+  }
 })
 
 vi.mock('@main/core/platform', () => ({
@@ -83,7 +101,7 @@ vi.mock('electron', () => ({
   BrowserWindow: { fromWebContents: vi.fn() },
   nativeImage: { createFromPath: vi.fn(() => ({})) },
   nativeTheme: { shouldUseDarkColors: false },
-  shell: { openExternal: vi.fn(), openPath: vi.fn() }
+  shell: { openExternal: shellOpenExternalMock, openPath: shellOpenPathMock }
 }))
 
 vi.mock('@electron-toolkit/utils', () => ({ optimizer: { watchWindowShortcuts: vi.fn() } }))
@@ -127,7 +145,12 @@ interface MockBrowserWindow extends EventEmitter {
   maximize: ReturnType<typeof vi.fn>
   setVisibleOnAllWorkspaces: ReturnType<typeof vi.fn>
   setFullScreen: ReturnType<typeof vi.fn>
-  webContents: { reload: ReturnType<typeof vi.fn>; on: ReturnType<typeof vi.fn> }
+  webContents: {
+    reload: ReturnType<typeof vi.fn>
+    on: ReturnType<typeof vi.fn>
+    setWindowOpenHandler: ReturnType<typeof vi.fn>
+    session: { webRequest: { onHeadersReceived: ReturnType<typeof vi.fn> } }
+  }
 }
 
 function createMockWindow(): MockBrowserWindow {
@@ -147,7 +170,9 @@ function createMockWindow(): MockBrowserWindow {
   win.webContents = {
     reload: vi.fn(),
     // capture render-process-gone listener for crash-recovery tests
-    on: vi.fn()
+    on: vi.fn(),
+    setWindowOpenHandler: vi.fn(),
+    session: { webRequest: { onHeadersReceived: vi.fn() } }
   }
   return win
 }
@@ -347,6 +372,15 @@ describe('MainWindowService', () => {
 
       expect(win.hide).toHaveBeenCalledTimes(1)
       expect(windowManagerMock.behavior.setMacShowInDockByType).not.toHaveBeenCalled()
+    })
+
+    describe('oauth popup handler', () => {
+      it('allows known OAuth popups without forcing a shared webview partition', () => {
+        ;(svc as any).setupWebContentsHandlers(win)
+        const handler = win.webContents.setWindowOpenHandler.mock.calls[0][0]
+
+        expect(handler({ url: 'https://account.siliconflow.cn/oauth/authorize' })).toEqual({ action: 'allow' })
+      })
     })
 
     it('focuses a visible unfocused main window instead of hiding it', () => {

@@ -81,6 +81,7 @@ const api = {
   resetData: () => ipcRenderer.invoke(IpcChannel.App_ResetData),
   getCacheSize: () => ipcRenderer.invoke(IpcChannel.App_GetCacheSize),
   clearCache: () => ipcRenderer.invoke(IpcChannel.App_ClearCache),
+  clearMiniAppData: (appId: string) => ipcRenderer.invoke(IpcChannel.MiniApp_ClearData, appId),
   system: {
     getHostname: () => ipcRenderer.invoke(IpcChannel.System_GetHostname)
     // Git Bash is resolved in the main process (settingsBuilder); no renderer API.
